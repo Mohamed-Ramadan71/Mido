@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mido | QR Code Bulk Genrator</title>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode-generator/qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.7.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --secondary-color: #3f37c9;
+      --background-color: #f8f9fa;
+      --card-color: #ffffff;
+      --text-color: #212529;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Tajawal', Arial, sans-serif;
+      background: var(--background-color);
+      color: var(--text-color);
+      padding: 20px;
+      line-height: 1.6;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      padding: 20px 0;
+    }
+    
+    h1 {
+      color: var(--primary-color);
+      margin-bottom: 10px;
+      font-size: 2.2rem;
+    }
+    
+    .description {
+      color: #6c757d;
+      max-width: 700px;
+      margin: 0 auto 20px;
+    }
+    
+    .app-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      justify-content: center;
+    }
+    
+    .controls {
+      background: var(--card-color);
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      flex: 1;
+      min-width: 300px;
+      max-width: 500px;
+    }
+    
+    .control-group {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f1f3f5;
+      border-radius: 8px;
+    }
+    
+    .control-group h3 {
+      margin-bottom: 15px;
+      color: var(--primary-color);
+    }
+    
+    .color-control {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .color-control label {
+      width: 120px;
+      font-weight: bold;
+    }
+    
+    input[type="color"] {
+      width: 50px;
+      height: 30px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    
+    .hex-input {
+      width: 100px;
+      padding: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+    
+    textarea {
+      width: 100%;
+      height: 120px;
+      font-size: 16px;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      resize: vertical;
+      font-family: inherit;
+      transition: border 0.3s;
+    }
+    
+    textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
+    }
+    
+    .file-input {
+      margin-top: 10px;
+      width: 100%;
+    }
+    
+    .checkbox-control {
+      display: flex;
+      align-items: center;
+      margin-top: 10px;
+    }
+    
+    .checkbox-control input {
+      margin-left: 10px;
+    }
+    
+    .buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 20px;
+      flex-wrap: wrap;
+    }
+    
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      transition: all 0.3s ease;
+      font-weight: 500;
+      flex: 1;
+      min-width: 120px;
+    }
+    
+    .generate-btn {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .generate-btn:hover {
+      background-color: var(--secondary-color);
+      transform: translateY(-2px);
+    }
+    
+    .download-btn {
+      background-color: #2b9348;
+      color: white;
+    }
+    
+    .download-btn:hover {
+      background-color: #1b5e20;
+      transform: translateY(-2px);
+    }
+    
+    .reset-btn {
+      background-color: #f72585;
+      color: white;
+    }
+    
+    .reset-btn:hover {
+      background-color: #b5179e;
+      transform: translateY(-2px);
+    }
+    
+    .preview-section {
+      flex: 2;
+      min-width: 300px;
+    }
+    
+    .preview-title {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--primary-color);
+    }
+    
+    .preview {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .qr-container {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+      position: relative;
+    }
+    
+    .qr-container:hover {
+      transform: scale(1.03);
+    }
+    
+    svg {
+      display: block;
+      border-radius: 4px;
+    }
+    
+    .logo-preview {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      max-width: 20%;
+      max-height: 20%;
+      pointer-events: none;
+    }
+    
+    .loading-notification {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: var(--primary-color);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 50px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      transition: opacity 0.5s ease;
+    }
+    
+    .loading-notification.fade-out {
+      opacity: 0;
+    }
+    
+    .loading-spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 768px) {
+      .app-container {
+        flex-direction: column;
+      }
+      
+      .controls, .preview-section {
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Mido | QR Code Bulk Genrator</h1>
+      <p class="description">Generate Multiple QR Codes in a Click – Fast, Easy, Bulk!</p>
+    </header>
+    
+    <div class="app-container">
+      <div class="controls">
+        <h2>Setting</h2>
+        <textarea id="links" placeholder="Write the links here, each link on a separate line."></textarea>
+        
+        <div class="control-group">
+          <h3>Customize colors</h3>
+          
+          <div class="color-control">
+            <label for="qrColor">QR Color:</label>
+            <input type="color" id="qrColor" value="#000000">
+            <input type="text" id="qrColorHex" class="hex-input" value="#000000" placeholder="HEX">
+          </div>
+          
+          <div class="color-control">
+            <label for="bgColor">Background Color:</label>
+            <input type="color" id="bgColor" value="#ffffff">
+            <input type="text" id="bgColorHex" class="hex-input" value="#ffffff" placeholder="HEX">
+          </div>
+          
+          <div class="color-control">
+            <label for="cornerColor">Custom Eye Color:</label>
+            <input type="color" id="cornerColor" value="#000000">
+            <input type="text" id="cornerColorHex" class="hex-input" value="#000000" placeholder="HEX">
+          </div>
+        </div>
+        
+        <div class="control-group">
+          <h3>Add Logo Image</h3>
+          <input type="file" id="logoUpload" class="file-input" accept="image/*">
+          <div class="checkbox-control">
+            <input type="checkbox" id="removeLogoBg" checked>
+            <label for="removeLogoBg">Remove Background Behind Logo</label>
+          </div>
+        </div>
+        
+        <div class="buttons">
+          <button class="generate-btn" onclick="generate()">Create QR Code</button>
+          <button class="download-btn" onclick="downloadZip()">Download ZIP</button>
+          <button class="reset-btn" onclick="resetSettings()">Reset to Default</button>
+        </div>
+      </div>
+      
+      <div class="preview-section">
+        <h2 class="preview-title">Preview results</h2>
+        <div id="preview" class="preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const preview = document.getElementById("preview");
+    const qrItems = [];
+    const zip = new JSZip();
+    
+    // متغيرات الألوان
+    let currentQrColor = '#000000';
+    let currentBgColor = '#ffffff';
+    let currentCornerColor = '#000000';
+    let logoImage = null;
+    let removeLogoBg = true;
+    
+    // تحديث الألوان عند التغيير
+    function setupColorInputs() {
+      // QR Color
+      document.getElementById('qrColor').addEventListener('input', function(e) {
+        currentQrColor = e.target.value;
+        document.getElementById('qrColorHex').value = e.target.value;
+      });
+      
+      document.getElementById('qrColorHex').addEventListener('input', function(e) {
+        if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+          currentQrColor = e.target.value;
+          document.getElementById('qrColor').value = e.target.value;
+        }
+      });
+      
+      // BG Color
+      document.getElementById('bgColor').addEventListener('input', function(e) {
+        currentBgColor = e.target.value;
+        document.getElementById('bgColorHex').value = e.target.value;
+      });
+      
+      document.getElementById('bgColorHex').addEventListener('input', function(e) {
+        if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+          currentBgColor = e.target.value;
+          document.getElementById('bgColor').value = e.target.value;
+        }
+      });
+      
+      // Corner Color
+      document.getElementById('cornerColor').addEventListener('input', function(e) {
+        currentCornerColor = e.target.value;
+        document.getElementById('cornerColorHex').value = e.target.value;
+      });
+      
+      document.getElementById('cornerColorHex').addEventListener('input', function(e) {
+        if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+          currentCornerColor = e.target.value;
+          document.getElementById('cornerColor').value = e.target.value;
+        }
+      });
+    }
+    
+    // تحميل اللوجو
+    document.getElementById('logoUpload').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        logoImage = event.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+    
+    // إزالة خلفية اللوجو
+    document.getElementById('removeLogoBg').addEventListener('change', function(e) {
+      removeLogoBg = e.target.checked;
+    });
+    
+    // تصميم الزوايا الثلاثة مع التصميم الداخلي المعدل
+    function createCornerDesign(type, x, y, size) {
+      const scale = size / 100;
+      let design = '';
+      
+      // التصميم الخارجي للزوايا
+      if (type === 'top-left') {
+        design = `<g transform="translate(${x},${y}) scale(${scale})">
+          <g transform="translate(100, 0) scale(-1,1)" style="fill: ${currentCornerColor};">
+            <path d="M100,66.221V33.75C100,15.141,84.68,0,65.859,0H34.14C15.32,0,0,15.141,0,33.75V100l65.859-0.02C84.68,99.98,100,84.84,100,66.221z M85,66.221c0,10.344-8.586,18.76-19.145,18.76L15,84.996V33.75C15,23.411,23.586,15,34.14,15h31.719C76.414,15,85,23.411,85,33.75V66.221z"/>
+          </g>
+        </g>`;
+      } 
+      else if (type === 'top-right') {
+        design = `<g transform="translate(${x},${y}) scale(${scale})">
+          <g transform="" style="fill: ${currentCornerColor};">
+            <path d="M100,66.221V33.75C100,15.141,84.68,0,65.859,0H34.14C15.32,0,0,15.141,0,33.75V100l65.859-0.02C84.68,99.98,100,84.84,100,66.221z M85,66.221c0,10.344-8.586,18.76-19.145,18.76L15,84.996V33.75C15,23.411,23.586,15,34.14,15h31.719C76.414,15,85,23.411,85,33.75V66.221z"/>
+          </g>
+        </g>`;
+      }
+      else if (type === 'bottom-left') {
+        design = `<g transform="translate(${x},${y}) scale(${scale})">
+          <g transform="translate(100, 0) scale(-1,1) translate(0,100) scale(1,-1)" style="fill: ${currentCornerColor};">
+            <path d="M100,66.221V33.75C100,15.141,84.68,0,65.859,0H34.14C15.32,0,0,15.141,0,33.75V100l65.859-0.02C84.68,99.98,100,84.84,100,66.221z M85,66.221c0,10.344-8.586,18.76-19.145,18.76L15,84.996V33.75C15,23.411,23.586,15,34.14,15h31.719C76.414,15,85,23.411,85,33.75V66.221z"/>
+          </g>
+        </g>`;
+      }
+      
+      // التصميم الداخلي للزوايا
+      const innerScale = scale * 0.48;
+      const innerOffset = size * 0.25;
+      
+      if (type === 'top-left') {
+        design += `<g transform="translate(${x + innerOffset},${y + innerOffset}) scale(${innerScale})">
+          <g transform="translate(100, 0) scale(-1,1)" style="fill: ${currentCornerColor};">
+            <path d="M100,72.779V27.195C100,12.203,87.604,0,72.37,0H27.63C12.397,0,0,12.203,0,27.195V100l72.37-0.042C87.604,99.958,100,87.771,100,72.779z"/>
+          </g>
+        </g>`;
+      } 
+      else if (type === 'top-right') {
+        design += `<g transform="translate(${x + size - innerOffset - 100*innerScale},${y + innerOffset}) scale(${innerScale})">
+          <g transform="" style="fill: ${currentCornerColor};">
+            <path d="M100,72.779V27.195C100,12.203,87.604,0,72.37,0H27.63C12.397,0,0,12.203,0,27.195V100l72.37-0.042C87.604,99.958,100,87.771,100,72.779z"/>
+          </g>
+        </g>`;
+      }
+      else if (type === 'bottom-left') {
+        design += `<g transform="translate(${x + innerOffset},${y + size - innerOffset - 100*innerScale}) scale(${innerScale})">
+          <g transform="translate(100, 0) scale(-1,1) translate(0,100) scale(1,-1)" style="fill: ${currentCornerColor};">
+            <path d="M100,72.779V27.195C100,12.203,87.604,0,72.37,0H27.63C12.397,0,0,12.203,0,27.195V100l72.37-0.042C87.604,99.958,100,87.771,100,72.779z"/>
+          </g>
+        </g>`;
+      }
+      
+      return design;
+    }
+
+    // إنشاء QR Code كامل بتصميم مخصص
+    function createCustomQR(data, size = 300) {
+      const qr = qrcode(0, 'L');
+      qr.addData(data);
+      qr.make();
+      
+      const moduleCount = qr.getModuleCount();
+      const moduleSize = size / (moduleCount + 8);
+      const offset = moduleSize * 4;
+      const cornerSize = moduleSize * 7 * 2.45;
+      
+      let svg = `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">`;
+      
+      // إضافة خلفية مخصصة
+      svg += `<rect width="100%" height="100%" fill="${currentBgColor}" rx="4"/>`;
+      
+      // إضافة الزوايا المخصصة
+      svg += createCornerDesign('top-left', offset, offset, cornerSize/2.45);
+      svg += createCornerDesign('top-right', size - offset - cornerSize/2.45, offset, cornerSize/2.45);
+      svg += createCornerDesign('bottom-left', offset, size - offset - cornerSize/2.45, cornerSize/2.45);
+      
+      // إضافة النقاط الأساسية للQR
+      for (let row = 0; row < moduleCount; row++) {
+        for (let col = 0; col < moduleCount; col++) {
+          if (qr.isDark(row, col)) {
+            // تخطي مناطق الزوايا والمنطقة الوسطى للوجو
+            if (
+              (row < 7 && col < 7) || 
+              (row < 7 && col >= moduleCount - 7) || 
+              (row >= moduleCount - 7 && col < 7) ||
+              (logoImage && row >= moduleCount/2 - 7 && row <= moduleCount/2 + 7 && 
+               col >= moduleCount/2 - 7 && col <= moduleCount/2 + 7)
+            ) continue;
+            
+            const x = offset + col * moduleSize;
+            const y = offset + row * moduleSize;
+            
+            svg += `<circle cx="${x + moduleSize/2}" cy="${y + moduleSize/2}" 
+                    r="${moduleSize/2}" fill="${currentQrColor}"/>`;
+          }
+        }
+      }
+      
+      // إضافة اللوجو إذا كان موجوداً
+      if (logoImage) {
+        const logoSize = moduleSize * 14;
+        const logoX = size/2 - logoSize/2;
+        const logoY = size/2 - logoSize/2;
+        
+        // إضافة خلفية بيضاء خلف اللوجو إذا لم يتم اختيار إزالتها
+        if (!removeLogoBg) {
+          svg += `<rect x="${logoX}" y="${logoY}" width="${logoSize}" height="${logoSize}" fill="${currentBgColor}" rx="${moduleSize}"/>`;
+        }
+        
+        svg += `<image href="${logoImage}" x="${logoX}" y="${logoY}" width="${logoSize}" height="${logoSize}" preserveAspectRatio="xMidYMid meet"/>`;
+      }
+      
+      svg += `</svg>`;
+      return svg;
+    }
+
+    async function generate() {
+      const links = document.getElementById("links").value.trim().split("\n");
+      preview.innerHTML = "";
+      qrItems.length = 0;
+
+      if (links.length === 0 || (links.length === 1 && links[0] === "")) {
+        alert("Please enter links to generate QR Codes.");
+        return;
+      }
+
+      for (let i = 0; i < links.length; i++) {
+        const data = links[i].trim();
+        if (!data) continue;
+
+        const qrSvg = createCustomQR(data, 300);
+        
+        const container = document.createElement("div");
+        container.className = "qr-container";
+        container.innerHTML = qrSvg;
+        preview.appendChild(container);
+        
+        // إضافة معاينة اللوجو في الواجهة
+        if (logoImage) {
+          const logoPreview = document.createElement("img");
+          logoPreview.className = "logo-preview";
+          logoPreview.src = logoImage;
+          container.appendChild(logoPreview);
+        }
+
+        const svgBlob = new Blob([qrSvg], { type: "image/svg+xml" });
+        qrItems.push({ name: `qr-${i + 1}.svg`, blob: svgBlob });
+      }
+    }
+
+    // إنشاء إشعار التحميل
+    function showLoadingNotification(message) {
+      const notification = document.createElement('div');
+      notification.className = 'loading-notification';
+      notification.id = 'loading-notification';
+      notification.innerHTML = `
+        <div class="loading-spinner"></div>
+        <span>${message}</span>
+      `;
+      document.body.appendChild(notification);
+      notification.style.display = 'flex';
+    }
+
+    // إخفاء إشعار التحميل
+    function hideLoadingNotification() {
+      const notification = document.getElementById('loading-notification');
+      if (notification) {
+        notification.classList.add('fade-out');
+        setTimeout(() => {
+          notification.remove();
+        }, 500); // يتطابق مع مدة الانتقال
+      }
+    }
+
+    async function downloadZip() {
+      if (qrItems.length === 0) {
+        alert("Please create QR Codes first !");
+        return;
+      }
+      
+      showLoadingNotification('The file is being prepared for upload...');
+      
+      try {
+        const folder = zip.folder("qr-codes");
+        qrItems.forEach(item => folder.file(item.name, item.blob));
+        
+        if (logoImage) {
+          const logoBlob = dataURLtoBlob(logoImage);
+          folder.file("logo.png", logoBlob);
+        }
+        
+        const content = await zip.generateAsync({ type: "blob" });
+        saveAs(content, "qr-codes.zip");
+        
+        // تغيير نص الإشعار بعد اكتمال التحميل
+        const notification = document.getElementById('loading-notification');
+        if (notification) {
+          notification.querySelector('span').textContent = 'File created successfully!';
+        }
+        
+        // إبقاء الإشعار لمدة 3 ثواني بعد اكتمال التحميل
+        setTimeout(() => {
+          hideLoadingNotification();
+        }, 3000);
+        
+      } catch (error) {
+        const notification = document.getElementById('loading-notification');
+        if (notification) {
+          notification.querySelector('span').textContent = 'An error occurred during creation';
+          setTimeout(() => {
+            hideLoadingNotification();
+          }, 3000);
+        }
+        alert('An error occurred while creating the file:' + error.message);
+      }
+    }
+    
+    // تحويل Data URL إلى Blob
+    function dataURLtoBlob(dataurl) {
+      const arr = dataurl.split(',');
+      const mime = arr[0].match(/:(.*?);/)[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      
+      while(n--){
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      
+      return new Blob([u8arr], {type:mime});
+    }
+    
+    // إعادة الإعدادات إلى الوضع الافتراضي
+    function resetSettings() {
+      // إعادة تعيين الألوان
+      document.getElementById('qrColor').value = '#000000';
+      document.getElementById('qrColorHex').value = '#000000';
+      document.getElementById('bgColor').value = '#ffffff';
+      document.getElementById('bgColorHex').value = '#ffffff';
+      document.getElementById('cornerColor').value = '#000000';
+      document.getElementById('cornerColorHex').value = '#000000';
+      
+      // تحديث المتغيرات
+      currentQrColor = '#000000';
+      currentBgColor = '#ffffff';
+      currentCornerColor = '#000000';
+      
+      // إزالة اللوجو
+      document.getElementById('logoUpload').value = '';
+      logoImage = null;
+      
+      // إعادة تعيين خيار إزالة الخلفية
+      document.getElementById('removeLogoBg').checked = true;
+      removeLogoBg = true;
+      
+      // مسح حقل الروابط
+      document.getElementById('links').value = '';
+      
+      // مسح المعاينة
+      preview.innerHTML = '';
+      qrItems.length = 0;
+      
+      alert('Default settings restored successfully');
+    }
+    
+    // تهيئة الألوان عند تحميل الصفحة
+    window.onload = function() {
+      setupColorInputs();
+    };
+  </script>
+</body>
+</html>
